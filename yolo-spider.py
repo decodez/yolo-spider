@@ -3,9 +3,11 @@ from urllib.parse import urljoin, urlsplit, SplitResult
 import requests
 from bs4 import BeautifulSoup
 import csv
-
+import sys
 
 class RecursiveScraper:
+
+    sys.setrecursionlimit(10000);
  
     def __init__(self, url):
  
@@ -50,25 +52,28 @@ class RecursiveScraper:
     
         contentType = head.headers['Content-Type']
 
-        print(contentType);
         if 'text/html' in contentType:
-          print("Scraping {:s} ...".format(url))  
-          response = requests.get(url)
-          print(response);
-          self.urls.add(url)
-          soup = BeautifulSoup(response.content, 'html5lib')
-          for link in soup.findAll("a"):
-              childurl = self.preprocess_url(url, link.get("href"))
-              if childurl:
-                  self.scrape(childurl)
+            files = re.search('(.doc|.docx|.pdf|.png|.jpg|.jpeg|.xls)$', url)
+            if (files == None):
+                print("Scraping {:s} ...".format(url))  
+                response = requests.get(url)
+                self.urls.add(url)
+                soup = BeautifulSoup(response.content, 'html5lib')
+                for link in soup.findAll("a"):
+                    childurl = self.preprocess_url(url, link.get("href"))
+                    if childurl:
+                        if "output=printable" not in childurl:
+                            self.scrape(childurl)
+            else: 
+                print("Skipping {:s} ...".format(url))
         else:
           print("Skipping {:s} ...".format(url))  
 
 
 if __name__ == '__main__':
-    rscraper = RecursiveScraper("https://www.mfa.gov.sg/")
+    rscraper = RecursiveScraper("https://www.olive.moe.edu.sg/")
     rscraper.scrape()
-    csvFile = open('crawlurls.csv', 'w+', newline='')
+    csvFile = open('olive.csv', 'w+', newline='')
     try:
       writer = csv.writer(csvFile)
       writer.writerow(('number','url'))
